@@ -1,9 +1,9 @@
-import Image from "next/image";
+import Banner from "@/components/Home/Banner";
 
 export default function Home() {
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-     
+    <div className="flex items-center justify-center">
+     <Banner></Banner>
     </div>
   );
 }

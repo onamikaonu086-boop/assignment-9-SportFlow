@@ -1,5 +1,6 @@
 import Navbar from "@/components/Shared/Navbar";
 import "./globals.css";
+import Footer from "@/components/Shared/Footer";
 
 export const metadata = {
   title: "Create Next App",
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         <Navbar></Navbar>
         <main>{children}</main>
+        <Footer></Footer>
         </body>
     </html>
   );

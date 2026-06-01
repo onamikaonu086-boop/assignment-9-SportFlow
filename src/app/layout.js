@@ -1,6 +1,8 @@
 import Navbar from "@/components/Shared/Navbar";
 import "./globals.css";
+import "react-toastify/dist/ReactToastify.css";
 import Footer from "@/components/Shared/Footer";
+import ToastProvider from "@/components/Shared/ToastProvider";
 
 export const metadata = {
   title: "Create Next App",
@@ -14,7 +16,8 @@ export default function RootLayout({ children }) {
         <Navbar></Navbar>
         <main>{children}</main>
         <Footer></Footer>
-        </body>
+        <ToastProvider />
+      </body>
     </html>
   );
 }

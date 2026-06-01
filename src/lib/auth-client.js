@@ -1,42 +1,18 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { useCallback, useEffect, useState } from "react";
+
+const authBaseURL =
+  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  undefined;
 
 export const authClient = createAuthClient({
-  baseURL:
-    process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
-    (typeof window !== "undefined"
-      ? `${window.location.origin}/api/auth`
-      : `${process.env.BETTER_AUTH_URL || "http://localhost:8000"}/api/auth`),
+  baseURL: authBaseURL,
 });
 
 export function useSession() {
-  const [session, setSession] = useState(null);
-  const [isPending, setIsPending] = useState(true);
-  const [error, setError] = useState(null);
-
-  const refetch = useCallback(async () => {
-    setIsPending(true);
-    try {
-      const { data } = await authClient.getSession();
-      setSession(data || null);
-      setError(null);
-      return data;
-    } catch (err) {
-      setError(err);
-      setSession(null);
-      return null;
-    } finally {
-      setIsPending(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { data: session, isPending, error, refetch };
+  return authClient.useSession();
 }
 
 export { useSession as authUseSession };

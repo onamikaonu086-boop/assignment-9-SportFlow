@@ -7,20 +7,33 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
 
+const getCallbackURL = (path = "/") => {
+  if (typeof window === "undefined") return path;
+  return new URL(path, window.location.origin).toString();
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    if (!email || !password) {
+      toast.error("Email and password are required.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const { data, error } = await authClient.signIn.email({
+      const { error } = await authClient.signIn.email({
         email,
         password,
       });
@@ -43,14 +56,18 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/", 
+        callbackURL: getCallbackURL("/"), 
       });
     } catch (err) {
       console.error(err);
       toast.error("Google login failed!");
+      setGoogleLoading(false);
     }
   };
 
@@ -79,6 +96,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder="yourname@example.com"
+                autoComplete="email"
                 isRequired
                 className="w-full"
               />
@@ -92,7 +110,8 @@ export default function LoginPage() {
               <Input
                 name="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Password"
+                autoComplete="current-password"
                 isRequired
                 className="w-full"
               />
@@ -119,6 +138,7 @@ export default function LoginPage() {
         {/* Google Login Button */}
         <Button
           onClick={handleGoogleLogin}
+          isLoading={googleLoading}
           variant="bordered"
           className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2"
         >

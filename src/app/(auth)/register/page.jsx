@@ -7,19 +7,32 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
 
+const getCallbackURL = (path = "/") => {
+  if (typeof window === "undefined") return path;
+  return new URL(path, window.location.origin).toString();
+};
+
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const photoUrl = formData.get("photoUrl");
-    const password = formData.get("password");
+    const name = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const photoUrl = String(formData.get("photoUrl") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    if (!name || !email || !password) {
+      toast.error("Name, email, and password are required.");
+      setLoading(false);
+      return;
+    }
 
     
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
@@ -32,11 +45,12 @@ export default function RegisterPage() {
     }
 
     try {
-      const { data, error } = await authClient.signUp.email({
+      const { error } = await authClient.signUp.email({
         email,
         password,
         name,
-        image: photoUrl, 
+        image: photoUrl || undefined,
+        callbackURL: getCallbackURL("/login"), 
       });
 
       if (error) {
@@ -59,14 +73,18 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/", 
+        callbackURL: getCallbackURL("/"), 
       });
     } catch (err) {
       console.error(err);
       toast.error("Google login failed!");
+      setGoogleLoading(false);
     }
   };
 
@@ -95,6 +113,7 @@ export default function RegisterPage() {
                 name="name"
                 type="text"
                 placeholder="John Doe"
+                autoComplete="name"
                 isRequired
                 className="w-full"
               />
@@ -109,6 +128,7 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 placeholder="john@example.com"
+                autoComplete="email"
                 isRequired
                 className="w-full"
               />
@@ -123,7 +143,6 @@ export default function RegisterPage() {
                 name="photoUrl"
                 type="url"
                 placeholder="https://example.com/photo.jpg"
-                isRequired
                 className="w-full"
               />
             </div>
@@ -136,7 +155,8 @@ export default function RegisterPage() {
               <Input
                 name="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Password"
+                autoComplete="new-password"
                 isRequired
                 className="w-full"
               />
@@ -163,6 +183,7 @@ export default function RegisterPage() {
         {/* Google Login Button */}
         <Button
           onClick={handleGoogleLogin}
+          isLoading={googleLoading}
           variant="bordered"
           className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2"
         >

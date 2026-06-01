@@ -1,53 +1,50 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client"; 
-import { Button, Input, Form } from "@heroui/react";
+import { authClient } from "@/lib/auth-client";
+import { syncAuthAfterLogin } from "@/lib/api";
+import { Card, Form, Button, Input } from "@heroui/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-toastify";
+import PageTitle from "@/components/PageTitle";
 
-const getCallbackURL = (path = "/") => {
-  if (typeof window === "undefined") return path;
-  return new URL(path, window.location.origin).toString();
-};
-
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
+
+  const [isShowPassword, setIsShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+    
+    const form = e.currentTarget;
+    if (!form.checkValidity()) return;
 
-    const formData = new FormData(e.currentTarget);
+    setLoading(true);
+    const formData = new FormData(form);
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "");
 
-    if (!email || !password) {
-      toast.error("Email and password are required.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { error } = await authClient.signIn.email({
-        email,
-        password,
-      });
+      const { data, error } = await authClient.signIn.email({ email, password });
 
       if (error) {
-        toast.error(error.message || "Invalid email or password!");
+        toast.error(error.message || "Login failed.");
         setLoading(false);
         return;
       }
 
-      toast.success("Login successful! Welcome back.");
-      
-      router.push("/"); 
-      router.refresh();
+      if (data) {
+        await syncAuthAfterLogin(authClient);
+        toast.success("Welcome back to IdeaVault");
+        router.push(redirectPath);
+        router.refresh();
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Please try again.");
@@ -55,127 +52,112 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (googleLoading) return;
-    setGoogleLoading(true);
-
+  const handleGoogleSignIn = async () => {
     try {
+      const callbackURL = `${window.location.origin}${redirectPath}`;
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: getCallbackURL("/"), 
+        callbackURL,
       });
     } catch (err) {
       console.error(err);
-      toast.error("Google login failed!");
-      setGoogleLoading(false);
+      toast.error("Google sign-in failed");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12">
-      <div className="w-full max-w-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8">
-        
-        {/* Title Section */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome Back</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-            Login to book your favorite sports facility
-          </p>
-        </div>
+    <div className="container mx-auto max-w-md md:mb-20 my-10 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg bg-white dark:bg-slate-900">
+      <PageTitle title="Login" />
 
-        {/* Login Form */}
-        <Form onSubmit={handleLogin} className="space-y-5">
-          <div className="w-full space-y-4">
-            
-            {/* Email Field */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email Address
-              </label>
-              <Input
-                name="email"
-                type="email"
-                placeholder="yourname@example.com"
-                autoComplete="email"
-                isRequired
-                className="w-full"
-              />
-            </div>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl md:text-4xl font-bold">Welcome Back</h1>
+        <p className="text-gray-500 mt-2">Sign in to share and validate startup ideas</p>
+      </div>
+      
+      <Card className="p-4 shadow-none border-0 bg-transparent">
+        <Form className="flex flex-col gap-4" onSubmit={onSubmit} validationBehavior="native">
+          
+          {/* Email Input */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+            <Input 
+              name="email" 
+              type="email" 
+              placeholder="you@example.com" 
+              isRequired 
+              className="w-full" 
+            />
+          </div>
 
-            {/* Password Field */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Password
-              </label>
-              <Input
-                name="password"
-                type="password"
-                placeholder="Password"
-                autoComplete="current-password"
-                isRequired
-                className="w-full"
-              />
-            </div>
+          {/* Password Input */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <Input
+              name="password"
+              type={isShowPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              isRequired
+              className="w-full"
+            />
+          </div>
+
+          {/* Password Toggle & Forgot Password */}
+          <div className="flex items-center justify-between mt-1">
+            <button
+              type="button"
+              onClick={() => setIsShowPassword(!isShowPassword)}
+              className="text-sm text-indigo-600 flex items-center gap-1 hover:underline font-medium"
+            >
+              {isShowPassword ? (
+                <>Hide Password <FaEye /></>
+              ) : (
+                <>Show Password <FaEyeSlash /></>
+              )}
+            </button>
+
+            <Link href="#" className="text-sm text-indigo-600 hover:underline font-medium">
+              Forgot Password?
+            </Link>
           </div>
 
           {/* Submit Button */}
+          <Button type="submit" isLoading={loading} className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-xl mt-2 shadow-md">
+            Login
+          </Button>
+
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
+            New here?{" "}
+            <Link href={`/register?redirect=${encodeURIComponent(redirectPath)}`} className="text-indigo-600 font-semibold hover:underline">
+              Create an account
+            </Link>
+          </p>
+
+          {/* Divider */}
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+
+          {/* Google Sign-In */}
           <Button
-            type="submit"
-            isLoading={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition mt-2 shadow-md"
+            type="button"
+            variant="bordered"
+            className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl"
+            onClick={handleGoogleSignIn}
           >
-            {loading ? "Logging in..." : "Login"}
+            <FcGoogle className="text-xl" /> Continue with Google
           </Button>
         </Form>
-
-        {/* Divider */}
-        <div className="relative flex py-5 items-center">
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-          <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or continue with</span>
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-        </div>
-
-        {/* Google Login Button */}
-        <Button
-          onClick={handleGoogleLogin}
-          isLoading={googleLoading}
-          variant="bordered"
-          className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2"
-        >
-          {/* Google Icon SVG */}
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
-            <path
-              fill="#EA4335"
-              d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"
-            />
-            <path
-              fill="#4285F4"
-              d="M16.04 15.345c-1.077.733-2.436 1.145-4.04 1.145a7.089 7.089 0 0 1-6.734-4.855L1.24 14.75C3.198 18.702 7.27 21.4 12 21.4c2.99 0 5.704-1 7.79-2.722l-3.75-3.333Z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.266 14.235A7.141 7.141 0 0 1 4.91 12c0-.79.13-1.555.356-2.265L1.24 6.62A11.94 11.94 0 0 0 0 12c0 1.92.454 3.736 1.24 5.38l4.026-3.145Z"
-            />
-            <path
-              fill="#34A853"
-              d="M23.49 12.275c0-.818-.073-1.609-.21-2.373H12v4.491h6.445c-.277 1.482-1.113 2.736-2.37 3.582l3.75 3.332c2.195-2.027 3.664-5.014 3.664-8.757Z"
-            />
-          </svg>
-          Continue with Google
-        </Button>
-
-        {/* Register Redirect Link */}
-        <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/register"
-            className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
-          >
-            Register here
-          </Link>
-        </p>
-
-      </div>
+      </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<p className="text-center py-20 text-slate-500">Loading Login Form...</p>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,226 +1,200 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
-import { Button, Input, Form } from "@heroui/react";
+import { syncAuthAfterLogin } from "@/lib/api";
+import { validatePassword } from "@/lib/password";
+import { Card, Form, Button, Input } from "@heroui/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-toastify";
+import PageTitle from "@/components/PageTitle";
 
-const getCallbackURL = (path = "/") => {
-  if (typeof window === "undefined") return path;
-  return new URL(path, window.location.origin).toString();
-};
-
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
+  
+  const [isShowPassword, setIsShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleRegister = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+    
+    const form = e.currentTarget;
+    if (!form.checkValidity()) return;
 
-    const formData = new FormData(e.currentTarget);
+    setLoading(true);
+    const formData = new FormData(form);
     const name = String(formData.get("name") || "").trim();
     const email = String(formData.get("email") || "").trim();
-    const photoUrl = String(formData.get("photoUrl") || "").trim();
     const password = String(formData.get("password") || "");
+    const image = String(formData.get("image") || "").trim();
 
-    if (!name || !email || !password) {
-      toast.error("Name, email, and password are required.");
-      setLoading(false);
-      return;
-    }
-
-    
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
-    if (!passwordRegex.test(password)) {
-      toast.error(
-        "Password must be at least 6 characters long, contain at least one uppercase letter, and one lowercase letter."
-      );
+    // পাসওয়ার্ড ভ্যালিডেশন চেক
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError);
       setLoading(false);
       return;
     }
 
     try {
-      const { error } = await authClient.signUp.email({
+      const { data, error } = await authClient.signUp.email({
+        name,
         email,
         password,
-        name,
-        image: photoUrl || undefined,
-        callbackURL: getCallbackURL("/login"), 
+        image: image || undefined
       });
 
       if (error) {
-        toast.error(error.message || "Registration failed!");
+        const msg = error.message || "";
+        if (msg.toLowerCase().includes("database") || msg.includes("503")) {
+          toast.error("Something went wrong with the database connection.");
+        } else { // 💡 এখানে কোলন এররটি ফিক্স করা হয়েছে (} else {)
+          toast.error(msg || "Registration failed.");
+        }
         setLoading(false);
         return;
       }
 
-      toast.success("Registration successful! Redirecting to login...");
-      
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-
+      if (data) {
+        await syncAuthAfterLogin(authClient);
+        toast.success("Account created successfully!");
+        router.push(redirectPath);
+        router.refresh();
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error("An unexpected error occurred.");
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (googleLoading) return;
-    setGoogleLoading(true);
-
+  const handleGoogleSignIn = async () => {
     try {
+      const callbackURL = `${window.location.origin}${redirectPath}`;
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: getCallbackURL("/"), 
+        callbackURL,
       });
     } catch (err) {
       console.error(err);
-      toast.error("Google login failed!");
-      setGoogleLoading(false);
+      toast.error("Google sign-in failed");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12">
-      <div className="w-full max-w-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8">
-        
-        {/* Title Section */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Create Account</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-            Join SportNest to list or book world-class sports facilities
-          </p>
-        </div>
+    <div className="container mx-auto max-w-md md:mb-20 my-10 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg bg-white dark:bg-slate-900">
+      <PageTitle title="Register" />
+      
+      <div className="text-center mb-6">
+        <h1 className="text-2xl md:text-4xl font-bold">Create Account</h1>
+        <p className="text-gray-500 mt-2">Join IdeaVault and start sharing ideas</p>
+      </div>
 
-        {/* Registration Form */}
-        <Form onSubmit={handleRegister} className="space-y-4">
-          <div className="w-full space-y-4">
-            
-            {/* Full Name */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Full Name
-              </label>
-              <Input
-                name="name"
-                type="text"
-                placeholder="John Doe"
-                autoComplete="name"
-                isRequired
-                className="w-full"
-              />
-            </div>
-
-            {/* Email Address */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email Address
-              </label>
-              <Input
-                name="email"
-                type="email"
-                placeholder="john@example.com"
-                autoComplete="email"
-                isRequired
-                className="w-full"
-              />
-            </div>
-
-            {/* Photo URL */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Photo URL
-              </label>
-              <Input
-                name="photoUrl"
-                type="url"
-                placeholder="https://example.com/photo.jpg"
-                className="w-full"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="w-full">
-              <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                Password
-              </label>
-              <Input
-                name="password"
-                type="password"
-                placeholder="Password"
-                autoComplete="new-password"
-                isRequired
-                className="w-full"
-              />
-            </div>
+      <Card className="p-4 shadow-none border-0 bg-transparent">
+        <Form className="flex flex-col gap-4" onSubmit={onSubmit} validationBehavior="native">
+          
+          {/* Name Field */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
+            <Input 
+              name="name" 
+              placeholder="Your full name" 
+              isRequired 
+              className="w-full" 
+            />
           </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            isLoading={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition mt-4 shadow-md"
+          {/* Email Field */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+            <Input 
+              name="email" 
+              type="email" 
+              placeholder="you@example.com" 
+              isRequired 
+              className="w-full" 
+            />
+          </div>
+
+          {/* Photo URL Field */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Photo URL</label>
+            <Input 
+              name="image" 
+              type="url" 
+              placeholder="https://example.com/photo.jpg" 
+              className="w-full" 
+            />
+          </div>
+
+          {/* Password Field */}
+          <div className="w-full">
+            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <Input
+              name="password"
+              type={isShowPassword ? "text" : "password"}
+              placeholder="Min 6 chars, upper & lower case"
+              isRequired
+              className="w-full"
+            />
+          </div>
+
+          {/* Password Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsShowPassword(!isShowPassword)}
+            className="text-sm text-indigo-600 flex items-center gap-1 hover:underline font-medium mt-1 self-start"
           >
-            {loading ? "Registering..." : "Register"}
+            {isShowPassword ? (
+              <>Hide Password <FaEye /></>
+            ) : (
+              <>Show Password <FaEyeSlash /></>
+            )}
+          </button>
+
+          {/* Submit Button */}
+          <Button type="submit" isLoading={loading} className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-xl mt-2 shadow-md">
+            Register
+          </Button>
+
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
+            Already have an account?{" "}
+            <Link href={`/login?redirect=${encodeURIComponent(redirectPath)}`} className="text-indigo-600 font-semibold hover:underline">
+              Login
+            </Link>
+          </p>
+
+          {/* Divider */}
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+
+          {/* Google Sign-In */}
+          <Button 
+            type="button" 
+            variant="bordered" 
+            className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl" 
+            onClick={handleGoogleSignIn}
+          >
+            <FcGoogle className="text-xl" /> Continue with Google
           </Button>
         </Form>
-
-        {/* Divider */}
-        <div className="relative flex py-5 items-center">
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-          <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or register with</span>
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-        </div>
-
-        {/* Google Login Button */}
-        <Button
-          onClick={handleGoogleLogin}
-          isLoading={googleLoading}
-          variant="bordered"
-          className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2"
-        >
-          {/* Google Icon SVG */}
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
-            <path
-              fill="#EA4335"
-              d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"
-            />
-            <path
-              fill="#4285F4"
-              d="M16.04 15.345c-1.077.733-2.436 1.145-4.04 1.145a7.089 7.089 0 0 1-6.734-4.855L1.24 14.75C3.198 18.702 7.27 21.4 12 21.4c2.99 0 5.704-1 7.79-2.722l-3.75-3.333Z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.266 14.235A7.141 7.141 0 0 1 4.91 12c0-.79.13-1.555.356-2.265L1.24 6.62A11.94 11.94 0 0 0 0 12c0 1.92.454 3.736 1.24 5.38l4.026-3.145Z"
-            />
-            <path
-              fill="#34A853"
-              d="M23.49 12.275c0-.818-.073-1.609-.21-2.373H12v4.491h6.445c-.277 1.482-1.113 2.736-2.37 3.582l3.75 3.332c2.195-2.027 3.664-5.014 3.664-8.757Z"
-            />
-          </svg>
-          Register with Google
-        </Button>
-
-        {/* Login Redirect Link */}
-        <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
-          >
-            Login here
-          </Link>
-        </p>
-
-      </div>
+      </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<p className="text-center py-20 text-slate-500">Loading Register Form...</p>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

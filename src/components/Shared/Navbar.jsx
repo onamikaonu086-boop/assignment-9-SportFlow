@@ -1,36 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaHome, FaList, FaBook, FaPlus, FaTools, FaSignInAlt, FaBars, FaTimes } from "react-icons/fa";
+import { FaHome, FaList, FaBook, FaPlus, FaTools, FaSignInAlt, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { authClient, useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { showSuccess } from "@/lib/alert";
+import { setStoredToken } from "@/lib/api"; 
 
 const Navbar = () => {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const handleLogout = async () => {
-    await authClient.signOut();
-    showSuccess("Logged out successfully!");
-    setDropdownOpen(false);
-    setMobileMenuOpen(false);
-    router.push("/");
+    try {
+      await authClient.signOut();
+      setStoredToken(null); 
+      showSuccess("Logged out successfully!");
+      setMobileMenuOpen(false);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const user = session?.user;
@@ -39,10 +34,13 @@ const Navbar = () => {
     <nav className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50 transition-colors duration-300 border-b border-slate-100 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
+          
+          {/* Logo */}
           <Link href="/" className="text-2xl md:text-3xl font-extrabold text-blue-600 tracking-tighter">
             SportFlow
           </Link>
 
+          {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center space-x-1 font-medium text-gray-700 dark:text-gray-200">
             {[
               { href: "/", icon: <FaHome />, label: "Home" },
@@ -63,56 +61,68 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
+          {/* Desktop Right Actions (Theme Toggle & Profile Dropdown) */}
+          <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
+            
             {isPending ? (
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             ) : user ? (
-              <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="focus:outline-none" title={user.name}>
-                  <img
+              
+              <Dropdown placement="bottom-end" backdrop="blur" className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl">
+                <DropdownTrigger>
+                  <Avatar
+                    isBordered
+                    as="button"
+                    className="transition-transform border-blue-600 w-9 h-9 text-sm"
                     src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
-                    alt={user.name}
-                    className="w-9 h-9 rounded-full border-2 border-blue-600 object-cover"
+                    name={user.name}
                   />
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-2 z-50">
-                    <p className="px-4 py-2.5 text-sm font-semibold text-gray-800 dark:text-white border-b border-slate-100 dark:border-slate-700 truncate">{user.name}</p>
-                    {[
-                      { href: "/my-bookings", icon: <FaBook className="text-blue-500" />, label: "My Bookings" },
-                      { href: "/add-facility", icon: <FaPlus className="text-green-500" />, label: "Add Facility" },
-                      { href: "/manage-my-facilities", icon: <FaTools className="text-yellow-500" />, label: "Manage Facilities" },
-                    ].map(({ href, icon, label }) => (
-                      <Link key={href} href={href} onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-                        {icon} {label}
-                      </Link>
-                    ))}
-                    <hr className="my-1 border-slate-100 dark:border-slate-700" />
-                    <button onClick={handleLogout} className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 cursor-pointer">
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+                </DropdownTrigger>
+                
+                <DropdownMenu aria-label="Profile Actions" variant="flat">
+                  <DropdownItem key="profile" className="h-14 gap-2 border-b border-slate-100 dark:border-slate-700" textValue={user.name}>
+                    <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
+                    <p className="font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
+                  </DropdownItem>
+                  
+                  <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />} textValue="My Bookings">
+                    <Link href="/my-bookings" className="w-full block text-sm">My Bookings</Link>
+                  </DropdownItem>
+                  
+                  <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />} textValue="Add Facility">
+                    <Link href="/add-facility" className="w-full block text-sm">Add Facility</Link>
+                  </DropdownItem>
+                  
+                  <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />} textValue="Manage Facilities">
+                    <Link href="/manage-my-facilities" className="w-full block text-sm">Manage Facilities</Link>
+                  </DropdownItem>
+                  
+                  <DropdownItem key="logout" className="text-red-500 hover:text-red-600" startContent={<FaSignOutAlt />} onClick={handleLogout} textValue="Log Out">
+                    <span className="font-medium text-sm">Log Out</span>
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
             ) : (
-              <Link href="/login" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition font-semibold text-sm">
+              <Link href="/login" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition font-semibold text-sm shadow-sm">
                 <FaSignInAlt /> Login
               </Link>
             )}
           </div>
 
+          {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
             <ThemeToggle />
-            <button className="text-gray-700 dark:text-white p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+            <button className="text-gray-700 dark:text-white p-1 focus:outline-none" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
               {mobileMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
             </button>
           </div>
         </div>
       </div>
 
+      {/* Mobile Sidebar Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 pt-2 pb-4 space-y-1">
+        <div className="md:hidden bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 pt-2 pb-4 space-y-1 animate-in fade-in slide-in-from-top-5 duration-200">
           {user && (
             <div className="flex items-center gap-3 py-3 mb-2 border-b border-slate-100 dark:border-slate-700">
               <img
@@ -132,16 +142,16 @@ const Navbar = () => {
               { href: "/manage-my-facilities", icon: <FaTools />, label: "Manage Facilities" },
             ] : []),
           ].map(({ href, icon, label }) => (
-            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg">
+            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition">
               {icon} {label}
             </Link>
           ))}
           {user ? (
-            <button onClick={handleLogout} className="flex items-center gap-2 py-2.5 px-2 text-sm text-red-500 w-full cursor-pointer">
-              Logout
+            <button onClick={handleLogout} className="flex items-center gap-2 py-2.5 px-2 text-sm text-red-500 w-full text-left font-medium cursor-pointer">
+              <FaSignOutAlt /> Logout
             </button>
           ) : (
-            <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-semibold">
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-semibold transition">
               <FaSignInAlt /> Login
             </Link>
           )}

@@ -5,7 +5,7 @@ import WhyChooseUs from "@/components/Home/WhyChooseUs";
 
 export default function Home() {
   return (
-    <div>
+    <div className="min-h-screen max-w-7xl mx-auto justify-center">
       <Banner />
       <FeaturedFacilities />
       <HowItWorks />

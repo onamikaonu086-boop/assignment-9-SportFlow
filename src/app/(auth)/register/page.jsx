@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { showSuccess, showError } from "@/lib/alert";
@@ -16,8 +16,13 @@ function validatePassword(password) {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const getCallbackURL = () => window.location.origin;
+  const getCallbackURL = () => {
+    const redirect = searchParams.get("redirect") || "/";
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    return `${window.location.origin}${safeRedirect}`;
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();

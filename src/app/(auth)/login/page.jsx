@@ -39,7 +39,14 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: getCallbackURL() });
+    try {
+      const callbackURL = getCallbackURL();
+      console.log("[Login] Google callbackURL:", callbackURL);
+      await authClient.signIn.social({ provider: "google", callbackURL });
+    } catch (err) {
+      console.error("[Login] Google sign-in error:", err);
+      showError(err?.message || "Google sign-in failed");
+    }
   };
 
   return (

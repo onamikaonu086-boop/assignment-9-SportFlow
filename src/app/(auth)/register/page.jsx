@@ -52,7 +52,14 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: getCallbackURL() });
+    try {
+      const callbackURL = getCallbackURL();
+      console.log("[Register] Google callbackURL:", callbackURL);
+      await authClient.signIn.social({ provider: "google", callbackURL });
+    } catch (err) {
+      console.error("[Register] Google sign-in error:", err);
+      showError(err?.message || "Google sign-in failed");
+    }
   };
 
   return (

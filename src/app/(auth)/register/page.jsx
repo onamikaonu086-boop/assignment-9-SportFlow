@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { showSuccess, showError } from "@/lib/alert";
@@ -16,10 +16,10 @@ function validatePassword(password) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const getCallbackURL = () => {
-    const redirect = searchParams.get("redirect") || "/";
+    if (typeof window === "undefined") return "/";
+    const redirect = new URLSearchParams(window.location.search).get("redirect") || "/";
     const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
     return `${window.location.origin}${safeRedirect}`;
   };
@@ -56,14 +56,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50 dark:bg-slate-950">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-800">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-gray-900 dark:text-white">Create Account</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Join SportFlow today</p>
-        </div>
+    <Suspense>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50 dark:bg-slate-950">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-800">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-gray-900 dark:text-white">Create Account</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Join SportFlow today</p>
+          </div>
 
-        <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4">
           {[
             { name: "fullname", label: "Full Name", type: "text", placeholder: "Your full name", required: true },
             { name: "email", label: "Email", type: "email", placeholder: "you@example.com", required: true },
@@ -116,5 +117,6 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+    </Suspense>
   );
 }

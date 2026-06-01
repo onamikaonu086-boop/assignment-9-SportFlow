@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaHome, FaList, FaBook, FaPlus, FaTools, FaSignInAlt, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaList, FaBook, FaPlus, FaTools, FaSignInAlt, FaUserPlus, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
@@ -61,14 +61,13 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Right Actions (Theme Toggle & Profile Dropdown) */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Desktop Right Actions (Theme Toggle, Login/Register or Profile) */}
+          <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             
             {isPending ? (
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             ) : user ? (
-              
               <Dropdown placement="bottom-end" backdrop="blur" className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl">
                 <DropdownTrigger>
                   <Avatar
@@ -104,9 +103,15 @@ const Navbar = () => {
                 </DropdownMenu>
               </Dropdown>
             ) : (
-              <Link href="/login" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition font-semibold text-sm shadow-sm">
-                <FaSignInAlt /> Login
-              </Link>
+              // Desktop Login & Register Buttons
+              <div className="flex items-center gap-2">
+                <Link href="/login" className="flex items-center gap-2 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-sm">
+                  <FaSignInAlt /> Login
+                </Link>
+                <Link href="/register" className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition font-semibold text-sm shadow-sm">
+                  <FaUserPlus /> Register
+                </Link>
+              </div>
             )}
           </div>
 
@@ -146,14 +151,21 @@ const Navbar = () => {
               {icon} {label}
             </Link>
           ))}
+          
+          {/* Mobile Login / Register / Logout Handler */}
           {user ? (
             <button onClick={handleLogout} className="flex items-center gap-2 py-2.5 px-2 text-sm text-red-500 w-full text-left font-medium cursor-pointer">
               <FaSignOutAlt /> Logout
             </button>
           ) : (
-            <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-semibold transition">
-              <FaSignInAlt /> Login
-            </Link>
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition font-medium">
+                <FaSignInAlt /> Login
+              </Link>
+              <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-bold transition">
+                <FaUserPlus /> Register
+              </Link>
+            </div>
           )}
         </div>
       )}

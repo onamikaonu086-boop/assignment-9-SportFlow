@@ -1,162 +1,106 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
-import { syncAuthAfterLogin } from "@/lib/api";
-import { Card, Form, Button, Input } from "@heroui/react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import { toast } from "react-toastify";
-import PageTitle from "@/components/PageTitle";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { showSuccess, showError } from "@/lib/alert";
+import { FaGoogle } from "react-icons/fa";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/";
-
-  const [isShowPassword, setIsShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    
     const form = e.currentTarget;
-    if (!form.checkValidity()) return;
-
     setLoading(true);
-    const formData = new FormData(form);
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
-
-    try {
-      const { data, error } = await authClient.signIn.email({ email, password });
-
-      if (error) {
-        toast.error(error.message || "Login failed.");
-        setLoading(false);
-        return;
+    await authClient.signIn.email(
+      { email: form.email.value, password: form.password.value },
+      {
+        onSuccess: () => {
+          showSuccess("Logged in successfully!");
+          router.push(searchParams.get("redirect") || "/");
+        },
+        onError: (ctx) => {
+          showError(ctx.error.message || "Invalid email or password.");
+          setLoading(false);
+        },
       }
-
-      if (data) {
-        await syncAuthAfterLogin(authClient);
-        toast.success("Welcome back to IdeaVault");
-        router.push(redirectPath);
-        router.refresh();
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong. Please try again.");
-      setLoading(false);
-    }
+    );
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const callbackURL = `${window.location.origin}${redirectPath}`;
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Google sign-in failed");
-    }
+  const handleGoogleLogin = async () => {
+    const redirect = searchParams.get("redirect") || "/";
+    const callbackURL = `${window.location.origin}${redirect.startsWith("/") ? redirect : "/" + redirect}`;
+    await authClient.signIn.social({ provider: "google", callbackURL });
   };
 
   return (
-    <div className="container mx-auto max-w-md md:mb-20 my-10 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg bg-white dark:bg-slate-900">
-      <PageTitle title="Login" />
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50 dark:bg-slate-950">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-800">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-gray-900 dark:text-white">Welcome Back</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Sign in to your SportFlow account</p>
+        </div>
 
-      <div className="text-center mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold">Welcome Back</h1>
-        <p className="text-gray-500 mt-2">Sign in to share and validate startup ideas</p>
-      </div>
-      
-      <Card className="p-4 shadow-none border-0 bg-transparent">
-        <Form className="flex flex-col gap-4" onSubmit={onSubmit} validationBehavior="native">
-          
-          {/* Email Input */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
-            <Input 
-              name="email" 
-              type="email" 
-              placeholder="you@example.com" 
-              isRequired 
-              className="w-full" 
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1.5 text-gray-700 dark:text-gray-300">Email</label>
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-sm"
             />
           </div>
-
-          {/* Password Input */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-            <Input
+          <div>
+            <label className="block text-sm font-semibold mb-1.5 text-gray-700 dark:text-gray-300">Password</label>
+            <input
               name="password"
-              type={isShowPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              isRequired
-              className="w-full"
+              type="password"
+              required
+              placeholder="••••••••"
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-sm"
             />
           </div>
-
-          {/* Password Toggle & Forgot Password */}
-          <div className="flex items-center justify-between mt-1">
-            <button
-              type="button"
-              onClick={() => setIsShowPassword(!isShowPassword)}
-              className="text-sm text-indigo-600 flex items-center gap-1 hover:underline font-medium"
-            >
-              {isShowPassword ? (
-                <>Hide Password <FaEye /></>
-              ) : (
-                <>Show Password <FaEyeSlash /></>
-              )}
-            </button>
-
-            <Link href="#" className="text-sm text-indigo-600 hover:underline font-medium">
-              Forgot Password?
-            </Link>
-          </div>
-
-          {/* Submit Button */}
-          <Button type="submit" isLoading={loading} className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-xl mt-2 shadow-md">
-            Login
-          </Button>
-
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
-            New here?{" "}
-            <Link href={`/register?redirect=${encodeURIComponent(redirectPath)}`} className="text-indigo-600 font-semibold hover:underline">
-              Create an account
-            </Link>
-          </p>
-
-          {/* Divider */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or</span>
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-          </div>
-
-          {/* Google Sign-In */}
-          <Button
-            type="button"
-            variant="bordered"
-            className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl"
-            onClick={handleGoogleSignIn}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition disabled:opacity-60 cursor-pointer text-sm"
           >
-            <FcGoogle className="text-xl" /> Continue with Google
-          </Button>
-        </Form>
-      </Card>
+            {loading ? "Signing in..." : "Login"}
+          </button>
+        </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <hr className="flex-1 border-slate-200 dark:border-slate-700" />
+          <span className="text-xs text-gray-400 font-medium">OR</span>
+          <hr className="flex-1 border-slate-200 dark:border-slate-700" />
+        </div>
+
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-200 cursor-pointer"
+        >
+          <FaGoogle className="text-red-500" />
+          Continue with Google
+        </button>
+
+        <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-blue-600 font-bold hover:underline">Register</Link>
+        </p>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<p className="text-center py-20 text-slate-500">Loading Login Form...</p>}>
+    <Suspense>
       <LoginForm />
     </Suspense>
   );

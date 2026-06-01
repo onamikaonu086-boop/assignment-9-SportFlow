@@ -1,200 +1,114 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
-import { syncAuthAfterLogin } from "@/lib/api";
-import { validatePassword } from "@/lib/password";
-import { Card, Form, Button, Input } from "@heroui/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import { toast } from "react-toastify";
-import PageTitle from "@/components/PageTitle";
+import { authClient } from "@/lib/auth-client";
+import { showSuccess, showError } from "@/lib/alert";
+import { FaGoogle } from "react-icons/fa";
 
-function RegisterForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/";
-  
-  const [isShowPassword, setIsShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    
-    const form = e.currentTarget;
-    if (!form.checkValidity()) return;
-
-    setLoading(true);
-    const formData = new FormData(form);
-    const name = String(formData.get("name") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
-    const image = String(formData.get("image") || "").trim();
-
-    // পাসওয়ার্ড ভ্যালিডেশন চেক
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      toast.error(passwordError);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await authClient.signUp.email({
-        name,
-        email,
-        password,
-        image: image || undefined
-      });
-
-      if (error) {
-        const msg = error.message || "";
-        if (msg.toLowerCase().includes("database") || msg.includes("503")) {
-          toast.error("Something went wrong with the database connection.");
-        } else { // 💡 এখানে কোলন এররটি ফিক্স করা হয়েছে (} else {)
-          toast.error(msg || "Registration failed.");
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
-        await syncAuthAfterLogin(authClient);
-        toast.success("Account created successfully!");
-        router.push(redirectPath);
-        router.refresh();
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("An unexpected error occurred.");
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const callbackURL = `${window.location.origin}${redirectPath}`;
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Google sign-in failed");
-    }
-  };
-
-  return (
-    <div className="container mx-auto max-w-md md:mb-20 my-10 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg bg-white dark:bg-slate-900">
-      <PageTitle title="Register" />
-      
-      <div className="text-center mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold">Create Account</h1>
-        <p className="text-gray-500 mt-2">Join IdeaVault and start sharing ideas</p>
-      </div>
-
-      <Card className="p-4 shadow-none border-0 bg-transparent">
-        <Form className="flex flex-col gap-4" onSubmit={onSubmit} validationBehavior="native">
-          
-          {/* Name Field */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
-            <Input 
-              name="name" 
-              placeholder="Your full name" 
-              isRequired 
-              className="w-full" 
-            />
-          </div>
-
-          {/* Email Field */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
-            <Input 
-              name="email" 
-              type="email" 
-              placeholder="you@example.com" 
-              isRequired 
-              className="w-full" 
-            />
-          </div>
-
-          {/* Photo URL Field */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Photo URL</label>
-            <Input 
-              name="image" 
-              type="url" 
-              placeholder="https://example.com/photo.jpg" 
-              className="w-full" 
-            />
-          </div>
-
-          {/* Password Field */}
-          <div className="w-full">
-            <label className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-            <Input
-              name="password"
-              type={isShowPassword ? "text" : "password"}
-              placeholder="Min 6 chars, upper & lower case"
-              isRequired
-              className="w-full"
-            />
-          </div>
-
-          {/* Password Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsShowPassword(!isShowPassword)}
-            className="text-sm text-indigo-600 flex items-center gap-1 hover:underline font-medium mt-1 self-start"
-          >
-            {isShowPassword ? (
-              <>Hide Password <FaEye /></>
-            ) : (
-              <>Show Password <FaEyeSlash /></>
-            )}
-          </button>
-
-          {/* Submit Button */}
-          <Button type="submit" isLoading={loading} className="w-full bg-indigo-600 text-white font-semibold py-2 rounded-xl mt-2 shadow-md">
-            Register
-          </Button>
-
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-2">
-            Already have an account?{" "}
-            <Link href={`/login?redirect=${encodeURIComponent(redirectPath)}`} className="text-indigo-600 font-semibold hover:underline">
-              Login
-            </Link>
-          </p>
-
-          {/* Divider */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">Or</span>
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-          </div>
-
-          {/* Google Sign-In */}
-          <Button 
-            type="button" 
-            variant="bordered" 
-            className="w-full border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 rounded-xl" 
-            onClick={handleGoogleSignIn}
-          >
-            <FcGoogle className="text-xl" /> Continue with Google
-          </Button>
-        </Form>
-      </Card>
-    </div>
-  );
+function validatePassword(password) {
+  if (password.length < 6) return "Password must be at least 6 characters";
+  if (!/[A-Z]/.test(password)) return "Must contain at least one uppercase letter";
+  if (!/[a-z]/.test(password)) return "Must contain at least one lowercase letter";
+  return null;
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const name = form.fullname.value.trim();
+    const email = form.email.value.trim();
+    const image = form.image.value.trim();
+    const password = form.password.value;
+
+    const passwordError = validatePassword(password);
+    if (passwordError) { showError(passwordError); return; }
+
+    setLoading(true);
+    await authClient.signUp.email(
+      { name, email, password, image: image || undefined },
+      {
+        onSuccess: () => {
+          showSuccess("Account created! Please login.");
+          router.push("/login");
+        },
+        onError: (ctx) => {
+          showError(ctx.error.message || "Registration failed. Try again.");
+          setLoading(false);
+        },
+      }
+    );
+  };
+
+  const handleGoogleLogin = async () => {
+    await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin });
+  };
+
   return (
-    <Suspense fallback={<p className="text-center py-20 text-slate-500">Loading Register Form...</p>}>
-      <RegisterForm />
-    </Suspense>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50 dark:bg-slate-950">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-800">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-gray-900 dark:text-white">Create Account</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Join SportFlow today</p>
+        </div>
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          {[
+            { name: "fullname", label: "Full Name", type: "text", placeholder: "Your full name", required: true },
+            { name: "email", label: "Email", type: "email", placeholder: "you@example.com", required: true },
+            { name: "image", label: "Photo URL", type: "url", placeholder: "https://your-photo.com/image.png", required: false },
+            { name: "password", label: "Password", type: "password", placeholder: "••••••••", required: true },
+          ].map(({ name, label, type, placeholder, required }) => (
+            <div key={name}>
+              <label className="block text-sm font-semibold mb-1.5 text-gray-700 dark:text-gray-300">
+                {label} {!required && <span className="font-normal text-gray-400">(optional)</span>}
+              </label>
+              <input
+                name={name}
+                type={type}
+                required={required}
+                placeholder={placeholder}
+                className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-sm"
+              />
+              {name === "password" && (
+                <p className="text-xs text-gray-400 mt-1">Min 6 characters, 1 uppercase, 1 lowercase</p>
+              )}
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition disabled:opacity-60 cursor-pointer text-sm"
+          >
+            {loading ? "Creating account..." : "Register"}
+          </button>
+        </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <hr className="flex-1 border-slate-200 dark:border-slate-700" />
+          <span className="text-xs text-gray-400 font-medium">OR</span>
+          <hr className="flex-1 border-slate-200 dark:border-slate-700" />
+        </div>
+
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-200 cursor-pointer"
+        >
+          <FaGoogle className="text-red-500" />
+          Continue with Google
+        </button>
+
+        <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-600 font-bold hover:underline">Login</Link>
+        </p>
+      </div>
+    </div>
   );
 }

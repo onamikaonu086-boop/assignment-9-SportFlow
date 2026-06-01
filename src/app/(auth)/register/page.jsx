@@ -17,6 +17,7 @@ function validatePassword(password) {
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const getCallbackURL = () => window.location.origin;
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -46,7 +47,7 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin });
+    await authClient.signIn.social({ provider: "google", callbackURL: getCallbackURL() });
   };
 
   return (

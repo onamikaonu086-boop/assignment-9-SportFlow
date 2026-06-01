@@ -12,16 +12,23 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
 
+  const getCallbackURL = () => {
+    const redirect = searchParams.get("redirect") || "/";
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    return `${window.location.origin}${safeRedirect}`;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
+    const callbackURL = getCallbackURL();
     setLoading(true);
     await authClient.signIn.email(
-      { email: form.email.value, password: form.password.value },
+      { email: form.email.value, password: form.password.value, callbackURL },
       {
         onSuccess: () => {
           showSuccess("Logged in successfully!");
-          router.push(searchParams.get("redirect") || "/");
+          router.push(new URL(callbackURL).pathname);
         },
         onError: (ctx) => {
           showError(ctx.error.message || "Invalid email or password.");
@@ -32,9 +39,7 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    const redirect = searchParams.get("redirect") || "/";
-    const callbackURL = `${window.location.origin}${redirect.startsWith("/") ? redirect : "/" + redirect}`;
-    await authClient.signIn.social({ provider: "google", callbackURL });
+    await authClient.signIn.social({ provider: "google", callbackURL: getCallbackURL() });
   };
 
   return (

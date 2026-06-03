@@ -55,7 +55,7 @@ export default function RegisterPage() {
     try {
       const callbackURL = getCallbackURL();
       console.log("[Register] Google callbackURL:", callbackURL);
-      await authClient.signIn.social({ provider: "google", callbackURL });
+      await authClient.signIn.social({ provider: "google", callbackURL: "https://assignment-9-sport-flow.vercel.app", });
     } catch (err) {
       console.error("[Register] Google sign-in error:", err);
       showError(err?.message || "Google sign-in failed");

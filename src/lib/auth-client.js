@@ -2,8 +2,10 @@
 
 import { createAuthClient } from "better-auth/react";
 
+const authServerURL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, "") || "https://assignment-9-sport-flow-server.vercel.app";
+
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "https://assignment-9-sport-flow-server.vercel.app",
+  baseURL: authServerURL,
   basePath: "/api/auth",
 });
 

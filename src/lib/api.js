@@ -10,7 +10,7 @@ export async function apiFetch(path, options = {}) {
   return await fetch(`${API_URL}${cleanPath}`, {
     ...options,
     headers,
-    credentials: "include", 
+    credentials: "include",
   });
 }
 

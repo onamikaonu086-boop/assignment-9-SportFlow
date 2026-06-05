@@ -8,7 +8,7 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@
 import ThemeToggle from "@/components/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
 import { showSuccess } from "@/lib/alert";
-import { setStoredToken } from "@/lib/api"; 
+// import { setStoredToken } from "@/lib/api"; 
 
 const Navbar = () => {
   const { data: session, isPending } = authClient.useSession();
@@ -18,7 +18,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      setStoredToken(null); 
+      // setStoredToken(null); 
       showSuccess("Logged out successfully!");
       setMobileMenuOpen(false);
       router.push("/");

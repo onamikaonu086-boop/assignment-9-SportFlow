@@ -41,12 +41,14 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      const callbackURL = getCallbackURL();
+      console.log("Starting Google login from:", window.location.origin);
+      
+      // Better-auth automatically handles state and redirects
+      // Just let it manage the OAuth flow
       await authClient.signIn.social({ 
-        provider: "google", 
-        callbackURL,
+        provider: "google",
       });
-      // Better Auth will redirect automatically on success
+      
     } catch (err) {
       console.error("[Login] Google sign-in error:", err);
       setLoading(false);

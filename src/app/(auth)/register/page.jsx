@@ -54,12 +54,13 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      const callbackURL = getCallbackURL();
+      console.log("Starting Google signup from:", window.location.origin);
+      
+      // Better-auth automatically handles state and redirects
       await authClient.signIn.social({ 
-        provider: "google", 
-        callbackURL,
+        provider: "google",
       });
-      // Better Auth will redirect automatically on success
+      
     } catch (err) {
       console.error("[Register] Google sign-in error:", err);
       setLoading(false);

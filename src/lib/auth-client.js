@@ -7,6 +7,9 @@ const authServerURL = (process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "https://assig
 export const authClient = createAuthClient({
   baseURL: authServerURL,
   basePath: "/api/auth",
+  fetchOptions: {
+    credentials: "include",
+  },
 });
 
 export function useSession() {

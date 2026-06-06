@@ -40,11 +40,17 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
+      setLoading(true);
       const callbackURL = getCallbackURL();
-      await authClient.signIn.social({ provider: "google", callbackURL });
+      await authClient.signIn.social({ 
+        provider: "google", 
+        callbackURL,
+      });
+      // Better Auth will redirect automatically on success
     } catch (err) {
       console.error("[Login] Google sign-in error:", err);
-      showError(err?.message || "Google sign-in failed");
+      setLoading(false);
+      showError(err?.message || "Google sign-in failed. Please try again.");
     }
   };
 
@@ -94,10 +100,11 @@ function LoginForm() {
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-200 cursor-pointer"
+          disabled={loading}
+          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <FaGoogle className="text-red-500" />
-          Continue with Google
+          {loading ? "Signing in..." : "Continue with Google"}
         </button>
 
         <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">

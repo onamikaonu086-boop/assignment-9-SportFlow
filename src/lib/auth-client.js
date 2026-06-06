@@ -2,12 +2,7 @@
 
 import { createAuthClient } from "better-auth/react";
 
-const normalizeBetterAuthUrl = (value) => {
-  if (!value) return "https://assignment-9-sport-flow-server.vercel.app";
-  return value.replace(/\/$/, "").replace(/\/api\/auth$/, "");
-};
-
-const authServerURL = normalizeBetterAuthUrl(process.env.NEXT_PUBLIC_BETTER_AUTH_URL);
+const authServerURL = (process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "https://assignment-9-sport-flow-server.vercel.app").replace(/\/$/, "");
 
 export const authClient = createAuthClient({
   baseURL: authServerURL,

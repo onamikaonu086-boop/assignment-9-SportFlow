@@ -1,13 +1,13 @@
 "use client";
 
-import { HeroUIProvider } from "@heroui/react";
+import { RouterProvider } from "@heroui/react";
 import ToastProvider from "./Shared/ToastProvider";
 
 export default function ClientProviders({ children }) {
   return (
-    <HeroUIProvider> 
+    <RouterProvider>
       <ToastProvider />
       {children}
-    </HeroUIProvider>
+    </RouterProvider>
   );
 }

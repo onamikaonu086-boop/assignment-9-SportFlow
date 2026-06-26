@@ -15,6 +15,10 @@ const Navbar = () => {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  if (typeof window !== "undefined") {
+    console.debug("[Navbar] session:", session, "isPending:", isPending);
+  }
+
   const handleLogout = async () => {
     try {
       await authClient.signOut();

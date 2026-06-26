@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaHome, FaList, FaBook, FaPlus, FaTools, FaSignInAlt, FaUserPlus, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
 import { showSuccess } from "@/lib/alert";
@@ -13,12 +12,25 @@ const Navbar = () => {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await authClient.signOut();
       showSuccess("Logged out successfully!");
       setMobileMenuOpen(false);
+      setDropdownOpen(false);
       router.push("/");
       router.refresh();
     } catch (error) {
@@ -66,54 +78,62 @@ const Navbar = () => {
             {isPending ? (
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             ) : user ? (
-              <div className="relative">
-                <Dropdown placement="bottom-end">
-                  <DropdownTrigger>
-                    <Avatar
-                      isBordered
-                      as="button"
-                      className="transition-transform border-blue-600 w-9 h-9 text-sm cursor-pointer"
-                      src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
-                      name={user.name}
-                    />
-                  </DropdownTrigger>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center focus:outline-none cursor-pointer"
+                  aria-haspopup="true"
+                  aria-expanded={dropdownOpen}
+                >
+                  <img
+                    src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
+                    alt={user.name}
+                    className="w-9 h-9 rounded-full border-2 border-blue-600 object-cover transition transform hover:scale-105"
+                  />
+                </button>
 
-                  <DropdownMenu
-                    aria-label="Profile Actions"
-                    variant="flat"
-                    className="w-56"
-                  >
-                    <DropdownItem key="profile" isReadOnly className="opacity-100 cursor-default">
-                      <div className="py-1">
-                        <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
-                        <p className="font-bold text-slate-800 dark:text-white truncate text-sm mt-0.5">{user.name}</p>
-                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                      </div>
-                    </DropdownItem>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 py-1 z-50 transition-all">
+                    
+                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+                      <p className="font-semibold text-[10px] text-slate-400 uppercase tracking-wider">Signed in as</p>
+                      <p className="font-bold text-slate-800 dark:text-white truncate text-sm mt-0.5">{user.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                    </div>
 
-                    <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />}>
-                      <Link href="/my-bookings" className="w-full block text-sm">My Bookings</Link>
-                    </DropdownItem>
-
-                    <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />}>
-                      <Link href="/add-facility" className="w-full block text-sm">Add Facility</Link>
-                    </DropdownItem>
-
-                    <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />}>
-                      <Link href="/manage-my-facilities" className="w-full block text-sm">Manage Facilities</Link>
-                    </DropdownItem>
-
-                    <DropdownItem
-                      key="logout"
-                      color="danger"
-                      startContent={<FaSignOutAlt />}
-                      onPress={handleLogout}
-                      className="text-red-500"
+                    <Link 
+                      href="/my-bookings" 
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
                     >
-                      <span className="font-medium text-sm">Log Out</span>
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
+                      <FaBook className="text-blue-500" /> My Bookings
+                    </Link>
+
+                    <Link 
+                      href="/add-facility" 
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                    >
+                      <FaPlus className="text-green-500" /> Add Facility
+                    </Link>
+
+                    <Link 
+                      href="/manage-my-facilities" 
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                    >
+                      <FaTools className="text-yellow-500" /> Manage Facilities
+                    </Link>
+
+                    {/* লগআউট বাটন */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition border-t border-slate-100 dark:border-slate-700 text-left font-medium cursor-pointer"
+                    >
+                      <FaSignOutAlt /> Log Out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">

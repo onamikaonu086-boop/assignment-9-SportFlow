@@ -1,7 +1,4 @@
 @import "tailwindcss";
 @source "../node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}";
-
 @plugin "daisyui";
-@plugin "@heroui/react";
-
 @variant dark (&:where(.dark, .dark *));

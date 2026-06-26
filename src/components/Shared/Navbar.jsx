@@ -66,53 +66,55 @@ const Navbar = () => {
             {isPending ? (
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             ) : user ? (
-              <Dropdown placement="bottom-end">
-                <DropdownTrigger>
-                  <Avatar
-                    isBordered
-                    as="button"
-                    className="transition-transform border-blue-600 w-9 h-9 text-sm cursor-pointer"
-                    src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
-                    name={user.name}
-                  />
-                </DropdownTrigger>
+              <div className="relative">
+                <Dropdown placement="bottom-end">
+                  <DropdownTrigger>
+                    <Avatar
+                      isBordered
+                      as="button"
+                      className="transition-transform border-blue-600 w-9 h-9 text-sm cursor-pointer"
+                      src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
+                      name={user.name}
+                    />
+                  </DropdownTrigger>
 
-                <DropdownMenu
-                  aria-label="Profile Actions"
-                  variant="flat"
-                  className="w-56"
-                >
-                  <DropdownItem key="profile" isReadOnly className="opacity-100 cursor-default">
-                    <div className="py-1">
-                      <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
-                      <p className="font-bold text-slate-800 dark:text-white truncate text-sm mt-0.5">{user.name}</p>
-                      <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                    </div>
-                  </DropdownItem>
-
-                  <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />}>
-                    <Link href="/my-bookings" className="w-full block text-sm">My Bookings</Link>
-                  </DropdownItem>
-
-                  <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />}>
-                    <Link href="/add-facility" className="w-full block text-sm">Add Facility</Link>
-                  </DropdownItem>
-
-                  <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />}>
-                    <Link href="/manage-my-facilities" className="w-full block text-sm">Manage Facilities</Link>
-                  </DropdownItem>
-
-                  <DropdownItem
-                    key="logout"
-                    color="danger"
-                    startContent={<FaSignOutAlt />}
-                    onPress={handleLogout}
-                    className="text-red-500"
+                  <DropdownMenu
+                    aria-label="Profile Actions"
+                    variant="flat"
+                    className="w-56"
                   >
-                    <span className="font-medium text-sm">Log Out</span>
-                  </DropdownItem>
-                </DropdownMenu>
-              </Dropdown>
+                    <DropdownItem key="profile" isReadOnly className="opacity-100 cursor-default">
+                      <div className="py-1">
+                        <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
+                        <p className="font-bold text-slate-800 dark:text-white truncate text-sm mt-0.5">{user.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                      </div>
+                    </DropdownItem>
+
+                    <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />}>
+                      <Link href="/my-bookings" className="w-full block text-sm">My Bookings</Link>
+                    </DropdownItem>
+
+                    <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />}>
+                      <Link href="/add-facility" className="w-full block text-sm">Add Facility</Link>
+                    </DropdownItem>
+
+                    <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />}>
+                      <Link href="/manage-my-facilities" className="w-full block text-sm">Manage Facilities</Link>
+                    </DropdownItem>
+
+                    <DropdownItem
+                      key="logout"
+                      color="danger"
+                      startContent={<FaSignOutAlt />}
+                      onPress={handleLogout}
+                      className="text-red-500"
+                    >
+                      <span className="font-medium text-sm">Log Out</span>
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login" className="flex items-center gap-2 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-sm">

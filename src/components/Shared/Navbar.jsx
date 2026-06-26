@@ -8,21 +8,15 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@
 import ThemeToggle from "@/components/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
 import { showSuccess } from "@/lib/alert";
-// import { setStoredToken } from "@/lib/api"; 
 
 const Navbar = () => {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  if (typeof window !== "undefined") {
-    console.debug("[Navbar] session:", session, "isPending:", isPending);
-  }
-
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      // setStoredToken(null); 
       showSuccess("Logged out successfully!");
       setMobileMenuOpen(false);
       router.push("/");
@@ -38,7 +32,7 @@ const Navbar = () => {
     <nav className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50 transition-colors duration-300 border-b border-slate-100 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
-          
+
           {/* Logo */}
           <Link href="/" className="text-2xl md:text-3xl font-extrabold text-blue-600 tracking-tighter">
             SportFlow
@@ -65,49 +59,61 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Right Actions (Theme Toggle, Login/Register or Profile) */}
+          {/* Desktop Right Actions */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            
+
             {isPending ? (
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             ) : user ? (
-              <Dropdown placement="bottom-end" backdrop="blur" className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl">
+              <Dropdown placement="bottom-end">
                 <DropdownTrigger>
                   <Avatar
                     isBordered
                     as="button"
-                    className="transition-transform border-blue-600 w-9 h-9 text-sm"
+                    className="transition-transform border-blue-600 w-9 h-9 text-sm cursor-pointer"
                     src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=2563EB&color=fff`}
                     name={user.name}
                   />
                 </DropdownTrigger>
-                
-                <DropdownMenu aria-label="Profile Actions" variant="flat">
-                  <DropdownItem key="profile" className="h-14 gap-2 border-b border-slate-100 dark:border-slate-700" textValue={user.name}>
-                    <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
-                    <p className="font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
+
+                <DropdownMenu
+                  aria-label="Profile Actions"
+                  variant="flat"
+                  className="w-56"
+                >
+                  <DropdownItem key="profile" isReadOnly className="opacity-100 cursor-default">
+                    <div className="py-1">
+                      <p className="font-semibold text-xs text-slate-400 uppercase">Signed in as</p>
+                      <p className="font-bold text-slate-800 dark:text-white truncate text-sm mt-0.5">{user.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                    </div>
                   </DropdownItem>
-                  
-                  <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />} textValue="My Bookings">
+
+                  <DropdownItem key="bookings" startContent={<FaBook className="text-blue-500" />}>
                     <Link href="/my-bookings" className="w-full block text-sm">My Bookings</Link>
                   </DropdownItem>
-                  
-                  <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />} textValue="Add Facility">
+
+                  <DropdownItem key="add-facility" startContent={<FaPlus className="text-green-500" />}>
                     <Link href="/add-facility" className="w-full block text-sm">Add Facility</Link>
                   </DropdownItem>
-                  
-                  <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />} textValue="Manage Facilities">
+
+                  <DropdownItem key="manage" startContent={<FaTools className="text-yellow-500" />}>
                     <Link href="/manage-my-facilities" className="w-full block text-sm">Manage Facilities</Link>
                   </DropdownItem>
-                  
-                  <DropdownItem key="logout" className="text-red-500 hover:text-red-600" startContent={<FaSignOutAlt />} onClick={handleLogout} textValue="Log Out">
+
+                  <DropdownItem
+                    key="logout"
+                    color="danger"
+                    startContent={<FaSignOutAlt />}
+                    onPress={handleLogout}
+                    className="text-red-500"
+                  >
                     <span className="font-medium text-sm">Log Out</span>
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             ) : (
-              // Desktop Login & Register Buttons
               <div className="flex items-center gap-2">
                 <Link href="/login" className="flex items-center gap-2 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition font-semibold text-sm">
                   <FaSignInAlt /> Login
@@ -122,7 +128,11 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
             <ThemeToggle />
-            <button className="text-gray-700 dark:text-white p-1 focus:outline-none" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+            <button
+              className="text-gray-700 dark:text-white p-1 focus:outline-none"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
               {mobileMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
             </button>
           </div>
@@ -131,7 +141,7 @@ const Navbar = () => {
 
       {/* Mobile Sidebar Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 pt-2 pb-4 space-y-1 animate-in fade-in slide-in-from-top-5 duration-200">
+        <div className="md:hidden bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 pt-2 pb-4 space-y-1">
           {user && (
             <div className="flex items-center gap-3 py-3 mb-2 border-b border-slate-100 dark:border-slate-700">
               <img
@@ -139,9 +149,13 @@ const Navbar = () => {
                 alt={user.name}
                 className="w-8 h-8 rounded-full border-2 border-blue-600 object-cover"
               />
-              <span className="font-semibold text-gray-800 dark:text-white text-sm truncate">{user.name}</span>
+              <div>
+                <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">{user.name}</p>
+                <p className="text-xs text-gray-400 truncate">{user.email}</p>
+              </div>
             </div>
           )}
+
           {[
             { href: "/", icon: <FaHome />, label: "Home" },
             { href: "/facilities", icon: <FaList />, label: "All Facilities" },
@@ -151,22 +165,37 @@ const Navbar = () => {
               { href: "/manage-my-facilities", icon: <FaTools />, label: "Manage Facilities" },
             ] : []),
           ].map(({ href, icon, label }) => (
-            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition">
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition"
+            >
               {icon} {label}
             </Link>
           ))}
-          
-          {/* Mobile Login / Register / Logout Handler */}
+
           {user ? (
-            <button onClick={handleLogout} className="flex items-center gap-2 py-2.5 px-2 text-sm text-red-500 w-full text-left font-medium cursor-pointer">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 py-2.5 px-2 text-sm text-red-500 w-full text-left font-medium cursor-pointer"
+            >
               <FaSignOutAlt /> Logout
             </button>
           ) : (
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition font-medium">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 py-2.5 px-2 text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600 rounded-lg transition font-medium"
+              >
                 <FaSignInAlt /> Login
               </Link>
-              <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-bold transition">
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 py-2.5 px-2 text-sm text-blue-600 font-bold transition"
+              >
                 <FaUserPlus /> Register
               </Link>
             </div>
